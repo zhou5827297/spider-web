@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>spider_brower</title>
+    <link rel="stylesheet" type="text/css" href="css/proxy.css">
+    <link rel="stylesheet" type="text/css" href="css/showLoading.css">
+    <script type="text/javascript" src="js/angular.min.js"></script>
+    <script type="text/javascript" src="js/jquery-1.11.0.min.js"></script>
+    <script type="text/javascript" src="js/jquery.showLoading.min.js"></script>
+    <script type="text/javascript">
+        var app = angular.module('spiderApp', []);
+
+        app.config(function($sceDelegateProvider) {
+            $sceDelegateProvider.resourceUrlWhitelist([
+                // Allow same origin resource loads.
+                'self',
+                // Allow loading from our assets domain.  Notice the difference between * and **.
+                'http://192.168.0.127**']);
+        });
+
+        var VISIT_PATH = "http://192.168.0.127:5678/html/";
+        app.controller('spiderCtrl', function ($scope, $http, $location) {
+
+            $scope.filterEnable = true;
+
+            var getPath = function () {
+                var path = $location.absUrl();
+                if (path.endsWith("spiderBrower") == false) {
+                    path = path.substr(0, path.lastIndexOf("/"));
+                    path = path + "/spiderBrower"
+                }
+                return path;
+            }
+
+            var getParams = function (executejs) {
+                var params = "";
+                var url = $scope.url;
+                if (url) {
+                    params = params + "&url=" + url;
+                }
+                var js = $scope.js;
+                if (js && executejs) {
+                    params = params + "&js=" + js;
+                }
+                var proxySwitch = $scope.proxySwitch;
+                if (proxySwitch) {
+                    params = params + "&proxySwitch=" + proxySwitch;
+                }
+                var javaEnable = $scope.javaEnable;
+                if (javaEnable) {
+                    params = params + "&javaEnable=" + javaEnable;
+                }
+                var cookieEnable = $scope.cookieEnable;
+                if (cookieEnable) {
+                    params = params + "&cookieEnable=" + cookieEnable;
+                }
+                var filterEnable = $scope.filterEnable;
+                if (filterEnable) {
+                    params = params + "&filterEnable=" + filterEnable;
+                }
+                if (params) {
+                    params = "?" + params.substr(1);
+                }
+                return params;
+            }
+
+            $scope.search = function () {
+                var searchPath = getPath();
+                var params = getParams(false);
+                $("#pageContext").showLoading();
+                $http.post(searchPath + params)
+                        .success(function (response) {
+                            $scope.pageUrl = VISIT_PATH + response;
+                            $("#pageContext").hideLoading();
+                        });
+            }
+
+            $scope.executeJS = function () {
+                var searchPath = getPath();
+                var params = getParams(true);
+                $("#jsResult").showLoading();
+                $http.post(searchPath + params)
+                        .success(function (response) {
+                            $scope.jsResult = response;
+                            $("#jsResult").hideLoading();
+                        });
+
+            }
+        }).filter('trustHtml', function ($sce) {
+            return function (input) {
+                return $sce.trustAsHtml(input);
+            }
+        });
+    </script>
+</head>
+<body>
+<div ng-app="spiderApp" ng-controller="spiderCtrl">
+    <table>
+        <caption><h3>爬虫抓取页面</h3></caption>
+        <tr>
+            <td>地址:</td>
+            <td><input type="text" ng-model="url" style="width: 100%"/></td>
+        </tr>
+        <tr>
+            <td>代理开关:</td>
+            <td><input type="checkbox" ng-model="proxySwitch" value="true"/></td>
+        </tr>
+        <tr>
+            <td>Js开关:</td>
+            <td><input type="checkbox" ng-model="javaEnable" value="true"/></td>
+        </tr>
+        <tr>
+            <td>cookie开关:</td>
+            <td><input type="checkbox" ng-model="cookieEnable" value="true"/></td>
+        </tr>
+        <tr>
+            <td>过滤开关:</td>
+            <td><input type="checkbox" ng-model="filterEnable" ng-checked="true" value="true"/></td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <button type="button" ng-click="search()" style="width: 100%">执行</button>
+            </td>
+        </tr>
+        <tr>
+            <td>js代码:</td>
+            <td><textarea rows="3" cols="20" ng-model="js" style="width: 100%"></textarea></td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <button type="button" ng-click="executeJS()" style="width: 100%">执行JS</button>
+            </td>
+        </tr>
+        <tr>
+            <td>JS执行结果:</td>
+            <td id="jsResult" ng-bind-html="jsResult|trustHtml"></td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <iframe id="pageContext" ng-src='{{pageUrl}}' width="100%" height="800px"/>
+            </td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>
