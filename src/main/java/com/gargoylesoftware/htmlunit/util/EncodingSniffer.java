@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import com.spider.util.CharacterUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -546,6 +547,15 @@ public final class EncodingSniffer {
         if (encoding == null) {
             encoding = sniffEncodingFromMetaTag(bytes);
         }
+        // 还取不到编码，加入goole的编码检测
+        if (encoding == null) {
+            encoding= CharacterUtils.guessEncoding(bytes);
+            // 强制把GB2312转化为GBK，兼容繁体和日文
+            if ("GB2312".equalsIgnoreCase(encoding)) {
+                encoding = "GBK";
+            }
+        }
+        //-----------------------
         return encoding;
     }
 
